@@ -20,6 +20,9 @@ pub fn create_initialise_ix(
     mint_lp: Pubkey,
     vault_x: Pubkey,
     vault_y: Pubkey,
+    treasury: Pubkey,
+    treasury_x: Pubkey,
+    treasury_y: Pubkey,
 ) -> Instruction {
     let maker = payer.pubkey();
 
@@ -42,6 +45,9 @@ pub fn create_initialise_ix(
             token_program: TOKEN_PROGRAM_ID,
             associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
             system_program: SYSTEM_PROGRAM_ID,
+            treasury,
+            treasury_x,
+            treasury_y,
         }
         .to_account_metas(None),
     )

@@ -4,7 +4,7 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
-use crate::state::Config;
+use crate::{error::AmmError, state::Config};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -44,6 +44,22 @@ pub struct Initialize<'info> {
         space = Config::DISCRIMINATOR.len() + Config::INIT_SPACE,
     )]
     pub config: Account<'info, Config>,
+    /// CHECK: 手数料の受け取り wallet。アドレスだけを使い、データは読まない
+    pub treasury: UncheckedAccount<'info>,
+    #[account(
+        init_if_needed,
+        payer = initializer,
+        associated_token::mint = mint_x,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_x: Account<'info, TokenAccount>,
+    #[account(
+        init_if_needed,
+        payer = initializer,
+        associated_token::mint = mint_y,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_y: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
@@ -57,6 +73,8 @@ impl<'info> Initialize<'info> {
         authority: Option<Pubkey>,
         bumps: InitializeBumps,
     ) -> Result<()> {
+        require!(fee <= 10_000, AmmError::InvalidFee);
+
         self.config.set_inner(Config {
             seed,
             authority,
@@ -64,6 +82,7 @@ impl<'info> Initialize<'info> {
             mint_y: self.mint_y.key(),
             fee,
             locked: false,
+            treasury: self.treasury.key(),
             config_bump: bumps.config,
             lp_bump: bumps.mint_lp,
         });
